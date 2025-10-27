@@ -69,6 +69,15 @@ func getGUID(item *gofeed.Item) string {
 }
 
 func extractImageURL(item *gofeed.Item) string {
+	// Check for YouTube video - extract thumbnail from video ID
+	if strings.Contains(item.GUID, "yt:video:") || strings.Contains(item.Link, "youtube.com/watch") {
+		videoID := extractYouTubeVideoID(item)
+		if videoID != "" {
+			// Use maxresdefault for best quality, fallback to hqdefault if not available
+			return "https://img.youtube.com/vi/" + videoID + "/maxresdefault.jpg"
+		}
+	}
+
 	// Try item.Image first
 	if item.Image != nil && item.Image.URL != "" {
 		return item.Image.URL
@@ -91,6 +100,24 @@ func extractImageURL(item *gofeed.Item) string {
 	if item.Description != "" {
 		if img := extractFirstImageFromHTML(item.Description); img != "" {
 			return img
+		}
+	}
+
+	return ""
+}
+
+func extractYouTubeVideoID(item *gofeed.Item) string {
+	// Try GUID format: yt:video:VIDEO_ID
+	if strings.HasPrefix(item.GUID, "yt:video:") {
+		return strings.TrimPrefix(item.GUID, "yt:video:")
+	}
+
+	// Try URL format: https://www.youtube.com/watch?v=VIDEO_ID
+	if strings.Contains(item.Link, "youtube.com/watch?v=") {
+		re := regexp.MustCompile(`v=([a-zA-Z0-9_-]{11})`)
+		matches := re.FindStringSubmatch(item.Link)
+		if len(matches) > 1 {
+			return matches[1]
 		}
 	}
 

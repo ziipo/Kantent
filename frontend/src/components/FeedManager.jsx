@@ -3,7 +3,7 @@ import { useFeeds } from '../hooks/useFeeds';
 
 export default function FeedManager({ onClose, onSelectFeed }) {
   const { feeds, isLoading, createFeed, deleteFeed, refreshFeed, isCreating } = useFeeds();
-  const [activeTab, setActiveTab] = useState('rss'); // 'rss' or 'reddit'
+  const [activeTab, setActiveTab] = useState('rss'); // 'rss', 'reddit', or 'youtube'
 
   // RSS feed state
   const [newFeedUrl, setNewFeedUrl] = useState('');
@@ -11,6 +11,9 @@ export default function FeedManager({ onClose, onSelectFeed }) {
   // Reddit feed state
   const [subreddit, setSubreddit] = useState('');
   const [sortBy, setSortBy] = useState('hot');
+
+  // YouTube feed state
+  const [youtubeInput, setYoutubeInput] = useState('');
 
   const handleAddRssFeed = async (e) => {
     e.preventDefault();
@@ -35,6 +38,51 @@ export default function FeedManager({ onClose, onSelectFeed }) {
     setSubreddit('');
   };
 
+  const extractYouTubeChannelId = (input) => {
+    const trimmed = input.trim();
+
+    // If it looks like a channel ID already (starts with UC and is 24 chars)
+    if (/^UC[\w-]{22}$/.test(trimmed)) {
+      return trimmed;
+    }
+
+    // Extract from various YouTube URL formats
+    const patterns = [
+      // https://www.youtube.com/channel/UCxxxxxx
+      /youtube\.com\/channel\/(UC[\w-]{22})/,
+      // https://www.youtube.com/@channelname -> need to handle differently
+      /youtube\.com\/@([\w-]+)/,
+      // https://www.youtube.com/c/channelname -> need to handle differently
+      /youtube\.com\/c\/([\w-]+)/,
+      // https://www.youtube.com/user/username -> need to handle differently
+      /youtube\.com\/user\/([\w-]+)/,
+    ];
+
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match) {
+        return match[1];
+      }
+    }
+
+    // If no pattern matched, assume it's a channel handle or username
+    return trimmed;
+  };
+
+  const handleAddYouTubeFeed = async (e) => {
+    e.preventDefault();
+    if (!youtubeInput.trim()) return;
+
+    const channelId = extractYouTubeChannelId(youtubeInput);
+
+    // YouTube RSS feed URL format
+    const youtubeUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
+    const feedTitle = `YouTube: ${channelId}`;
+
+    createFeed({ url: youtubeUrl, title: feedTitle });
+    setYoutubeInput('');
+  };
+
   const handleRefresh = (feedId) => {
     refreshFeed(feedId);
   };
@@ -56,7 +104,7 @@ export default function FeedManager({ onClose, onSelectFeed }) {
           <div className="flex">
             <button
               onClick={() => setActiveTab('rss')}
-              className={`flex-1 px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
                 activeTab === 'rss'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -66,13 +114,23 @@ export default function FeedManager({ onClose, onSelectFeed }) {
             </button>
             <button
               onClick={() => setActiveTab('reddit')}
-              className={`flex-1 px-6 py-3 font-medium transition-colors ${
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
                 activeTab === 'reddit'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               Reddit
+            </button>
+            <button
+              onClick={() => setActiveTab('youtube')}
+              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+                activeTab === 'youtube'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              YouTube
             </button>
           </div>
         </div>
@@ -96,7 +154,7 @@ export default function FeedManager({ onClose, onSelectFeed }) {
                 {isCreating ? 'Adding...' : 'Add Feed'}
               </button>
             </form>
-          ) : (
+          ) : activeTab === 'reddit' ? (
             <form onSubmit={handleAddRedditFeed} className="space-y-3">
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -126,6 +184,27 @@ export default function FeedManager({ onClose, onSelectFeed }) {
                 className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isCreating ? 'Adding...' : 'Add Reddit Feed'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAddYouTubeFeed} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Channel URL or ID (e.g., https://youtube.com/@channelname or UCxxxxx)"
+                value={youtubeInput}
+                onChange={(e) => setYoutubeInput(e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <p className="text-xs text-gray-500">
+                Paste any YouTube channel URL, or just the channel ID (starts with UC)
+              </p>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Adding...' : 'Add YouTube Feed'}
               </button>
             </form>
           )}
