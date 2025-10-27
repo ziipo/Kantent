@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  rss-reader:
+    build: .
+    container_name: kantent
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - DATABASE_PATH=/data/rss-reader.db
+      - PORT=8080
+      - FEED_FETCH_INTERVAL=1800  # 30 minutes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
