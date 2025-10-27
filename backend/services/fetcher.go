@@ -153,11 +153,15 @@ func GetAllFeeds(db *sql.DB) ([]models.Feed, error) {
 	var feeds []models.Feed
 	for rows.Next() {
 		var f models.Feed
+		var lastError sql.NullString
 		err := rows.Scan(&f.ID, &f.Title, &f.URL, &f.SiteURL, &f.Description,
-			&f.FetchInterval, &f.LastFetched, &f.LastError, &f.CreatedAt, &f.UpdatedAt)
+			&f.FetchInterval, &f.LastFetched, &lastError, &f.CreatedAt, &f.UpdatedAt)
 		if err != nil {
 			log.Printf("Error scanning feed: %v", err)
 			continue
+		}
+		if lastError.Valid {
+			f.LastError = lastError.String
 		}
 		feeds = append(feeds, f)
 	}

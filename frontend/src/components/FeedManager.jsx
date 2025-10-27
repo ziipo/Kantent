@@ -3,14 +3,36 @@ import { useFeeds } from '../hooks/useFeeds';
 
 export default function FeedManager({ onClose, onSelectFeed }) {
   const { feeds, isLoading, createFeed, deleteFeed, refreshFeed, isCreating } = useFeeds();
+  const [activeTab, setActiveTab] = useState('rss'); // 'rss' or 'reddit'
+
+  // RSS feed state
   const [newFeedUrl, setNewFeedUrl] = useState('');
 
-  const handleAddFeed = async (e) => {
+  // Reddit feed state
+  const [subreddit, setSubreddit] = useState('');
+  const [sortBy, setSortBy] = useState('hot');
+
+  const handleAddRssFeed = async (e) => {
     e.preventDefault();
     if (!newFeedUrl.trim()) return;
 
     createFeed({ url: newFeedUrl, title: 'Loading...' });
     setNewFeedUrl('');
+  };
+
+  const handleAddRedditFeed = async (e) => {
+    e.preventDefault();
+    if (!subreddit.trim()) return;
+
+    // Clean up subreddit name (remove r/ prefix if present)
+    const cleanSubreddit = subreddit.replace(/^r\//, '').trim();
+
+    // Reddit RSS feed URL format
+    const redditUrl = `https://www.reddit.com/r/${cleanSubreddit}/${sortBy}.rss`;
+    const feedTitle = `r/${cleanSubreddit} (${sortBy})`;
+
+    createFeed({ url: redditUrl, title: feedTitle });
+    setSubreddit('');
   };
 
   const handleRefresh = (feedId) => {
@@ -30,24 +52,83 @@ export default function FeedManager({ onClose, onSelectFeed }) {
           </button>
         </div>
 
-        <div className="p-6 border-b">
-          <form onSubmit={handleAddFeed} className="flex gap-2">
-            <input
-              type="url"
-              placeholder="Enter feed URL (e.g., https://example.com/feed.xml)"
-              value={newFeedUrl}
-              onChange={(e) => setNewFeedUrl(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
+        <div className="border-b">
+          <div className="flex">
             <button
-              type="submit"
-              disabled={isCreating}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setActiveTab('rss')}
+              className={`flex-1 px-6 py-3 font-medium transition-colors ${
+                activeTab === 'rss'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
             >
-              {isCreating ? 'Adding...' : 'Add Feed'}
+              RSS Feed
             </button>
-          </form>
+            <button
+              onClick={() => setActiveTab('reddit')}
+              className={`flex-1 px-6 py-3 font-medium transition-colors ${
+                activeTab === 'reddit'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Reddit
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 border-b">
+          {activeTab === 'rss' ? (
+            <form onSubmit={handleAddRssFeed} className="flex gap-2">
+              <input
+                type="url"
+                placeholder="Enter feed URL (e.g., https://example.com/feed.xml)"
+                value={newFeedUrl}
+                onChange={(e) => setNewFeedUrl(e.target.value)}
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Adding...' : 'Add Feed'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleAddRedditFeed} className="space-y-3">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Subreddit name (e.g., technology or r/technology)"
+                    value={subreddit}
+                    onChange={(e) => setSubreddit(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="hot">Hot</option>
+                  <option value="new">New</option>
+                  <option value="top">Top</option>
+                  <option value="rising">Rising</option>
+                </select>
+              </div>
+              <button
+                type="submit"
+                disabled={isCreating}
+                className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreating ? 'Adding...' : 'Add Reddit Feed'}
+              </button>
+            </form>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
