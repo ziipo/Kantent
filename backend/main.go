@@ -60,6 +60,9 @@ func main() {
 
 		// Stats
 		r.Get("/stats", api.HandleGetStats(database))
+
+		// Feed discovery
+		r.Get("/discover", api.HandleDiscoverFeeds(database))
 	})
 
 	// Health check

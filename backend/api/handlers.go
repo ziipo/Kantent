@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -330,5 +331,26 @@ func HandleGetStats(db *sql.DB) http.HandlerFunc {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(stats)
+	}
+}
+
+
+// HandleDiscoverFeeds discovers RSS/Atom feeds from a website URL
+func HandleDiscoverFeeds(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		websiteURL := r.URL.Query().Get("url")
+		if websiteURL == "" {
+			http.Error(w, "URL parameter is required", http.StatusBadRequest)
+			return
+		}
+
+		candidates, err := services.DiscoverFeeds(websiteURL)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to discover feeds: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(candidates)
 	}
 }

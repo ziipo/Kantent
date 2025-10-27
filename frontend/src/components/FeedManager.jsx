@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useFeeds } from '../hooks/useFeeds';
+import { discoverFeeds } from '../api/client';
 
 export default function FeedManager({ onClose, onSelectFeed }) {
   const { feeds, isLoading, createFeed, deleteFeed, refreshFeed, isCreating } = useFeeds();
-  const [activeTab, setActiveTab] = useState('rss'); // 'rss', 'reddit', or 'youtube'
+  const [activeTab, setActiveTab] = useState('rss'); // 'rss', 'reddit', 'youtube', or 'discover'
 
   // RSS feed state
   const [newFeedUrl, setNewFeedUrl] = useState('');
@@ -14,6 +15,11 @@ export default function FeedManager({ onClose, onSelectFeed }) {
 
   // YouTube feed state
   const [youtubeInput, setYoutubeInput] = useState('');
+
+  // Discover feed state
+  const [discoverUrl, setDiscoverUrl] = useState('');
+  const [discoveredFeeds, setDiscoveredFeeds] = useState([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
 
   const handleAddRssFeed = async (e) => {
     e.preventDefault();
@@ -83,6 +89,25 @@ export default function FeedManager({ onClose, onSelectFeed }) {
     setYoutubeInput('');
   };
 
+  const handleDiscoverFeeds = async (e) => {
+    e.preventDefault();
+    if (!discoverUrl.trim()) return;
+
+    setIsDiscovering(true);
+    try {
+      const feeds = await discoverFeeds(discoverUrl);
+      setDiscoveredFeeds(feeds);
+    } catch (error) {
+      alert('Failed to discover feeds: ' + error.message);
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const handleAddDiscoveredFeed = (feedUrl) => {
+    createFeed({ url: feedUrl, title: 'Loading...' });
+  };
+
   const handleRefresh = (feedId) => {
     refreshFeed(feedId);
   };
@@ -100,11 +125,21 @@ export default function FeedManager({ onClose, onSelectFeed }) {
           </button>
         </div>
 
-        <div className="border-b">
-          <div className="flex">
+        <div className="border-b overflow-x-auto">
+          <div className="flex min-w-max">
+            <button
+              onClick={() => setActiveTab('discover')}
+              className={`flex-1 px-3 py-3 font-medium transition-colors whitespace-nowrap ${
+                activeTab === 'discover'
+                  ? 'text-blue-600 border-b-2 border-blue-600'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Discover
+            </button>
             <button
               onClick={() => setActiveTab('rss')}
-              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+              className={`flex-1 px-3 py-3 font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'rss'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -114,7 +149,7 @@ export default function FeedManager({ onClose, onSelectFeed }) {
             </button>
             <button
               onClick={() => setActiveTab('reddit')}
-              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+              className={`flex-1 px-3 py-3 font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'reddit'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -124,7 +159,7 @@ export default function FeedManager({ onClose, onSelectFeed }) {
             </button>
             <button
               onClick={() => setActiveTab('youtube')}
-              className={`flex-1 px-4 py-3 font-medium transition-colors ${
+              className={`flex-1 px-3 py-3 font-medium transition-colors whitespace-nowrap ${
                 activeTab === 'youtube'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-500 hover:text-gray-700'
@@ -136,7 +171,49 @@ export default function FeedManager({ onClose, onSelectFeed }) {
         </div>
 
         <div className="p-6 border-b">
-          {activeTab === 'rss' ? (
+          {activeTab === 'discover' ? (
+            <div className="space-y-3">
+              <form onSubmit={handleDiscoverFeeds} className="space-y-3">
+                <input
+                  type="url"
+                  placeholder="Enter website URL (e.g., https://example.com)"
+                  value={discoverUrl}
+                  onChange={(e) => setDiscoverUrl(e.target.value)}
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={isDiscovering}
+                  className="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDiscovering ? 'Discovering...' : 'Discover Feeds'}
+                </button>
+              </form>
+
+              {discoveredFeeds.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  <h3 className="font-semibold text-sm text-gray-700">Found {discoveredFeeds.length} feed(s):</h3>
+                  {discoveredFeeds.map((feed, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{feed.title || 'Untitled Feed'}</p>
+                        <p className="text-xs text-gray-500 truncate">{feed.url}</p>
+                        <span className="text-xs text-gray-400">{feed.type}</span>
+                      </div>
+                      <button
+                        onClick={() => handleAddDiscoveredFeed(feed.url)}
+                        disabled={isCreating}
+                        className="ml-3 px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : activeTab === 'rss' ? (
             <form onSubmit={handleAddRssFeed} className="flex gap-2">
               <input
                 type="url"

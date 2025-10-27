@@ -73,3 +73,8 @@ export const markAllRead = (feedId = null) => {
 };
 
 export const fetchStats = () => apiRequest('/api/stats');
+
+export const discoverFeeds = (websiteUrl) => {
+  const params = new URLSearchParams({ url: websiteUrl });
+  return apiRequest(`/api/discover?${params}`);
+};
