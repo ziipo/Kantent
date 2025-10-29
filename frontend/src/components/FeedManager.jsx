@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useFeeds } from '../hooks/useFeeds';
-import { discoverFeeds } from '../api/client';
+import { discoverFeeds, resolveYouTubeChannel } from '../api/client';
 
 export default function FeedManager({ onClose, onSelectFeed }) {
   const { feeds, isLoading, createFeed, deleteFeed, refreshFeed, isCreating } = useFeeds();
@@ -79,14 +79,16 @@ export default function FeedManager({ onClose, onSelectFeed }) {
     e.preventDefault();
     if (!youtubeInput.trim()) return;
 
-    const channelId = extractYouTubeChannelId(youtubeInput);
+    try {
+      // Use the backend API to resolve the channel ID
+      const result = await resolveYouTubeChannel(youtubeInput);
+      const feedTitle = `YouTube: ${youtubeInput}`;
 
-    // YouTube RSS feed URL format
-    const youtubeUrl = `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`;
-    const feedTitle = `YouTube: ${channelId}`;
-
-    createFeed({ url: youtubeUrl, title: feedTitle });
-    setYoutubeInput('');
+      createFeed({ url: result.rss_url, title: feedTitle });
+      setYoutubeInput('');
+    } catch (error) {
+      alert('Failed to resolve YouTube channel: ' + error.message);
+    }
   };
 
   const handleDiscoverFeeds = async (e) => {

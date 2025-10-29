@@ -78,3 +78,8 @@ export const discoverFeeds = (websiteUrl) => {
   const params = new URLSearchParams({ url: websiteUrl });
   return apiRequest(`/api/discover?${params}`);
 };
+
+export const resolveYouTubeChannel = (input) => {
+  const params = new URLSearchParams({ input });
+  return apiRequest(`/api/youtube/resolve?${params}`);
+};

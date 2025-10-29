@@ -63,6 +63,9 @@ func main() {
 
 		// Feed discovery
 		r.Get("/discover", api.HandleDiscoverFeeds(database))
+
+		// YouTube channel resolution
+		r.Get("/youtube/resolve", api.HandleResolveYouTubeChannel(database))
 	})
 
 	// Health check

@@ -354,3 +354,26 @@ func HandleDiscoverFeeds(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(candidates)
 	}
 }
+
+// HandleResolveYouTubeChannel resolves a YouTube channel handle/URL to a channel ID
+func HandleResolveYouTubeChannel(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		input := r.URL.Query().Get("input")
+		if input == "" {
+			http.Error(w, "input parameter is required", http.StatusBadRequest)
+			return
+		}
+
+		channelID, err := services.ResolveYouTubeChannelID(input)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to resolve YouTube channel: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"channel_id": channelID,
+			"rss_url":    fmt.Sprintf("https://www.youtube.com/feeds/videos.xml?channel_id=%s", channelID),
+		})
+	}
+}
