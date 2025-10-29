@@ -73,13 +73,18 @@ func main() {
 		w.Write([]byte("OK"))
 	})
 
-	// Serve frontend static files from filesystem (for development)
-	frontendPath := "../frontend/dist"
+	// Serve frontend static files from filesystem
+	// Try SvelteKit build first, fall back to React
+	frontendPath := "../frontend-svelte/build"
+	if _, err := os.Stat(frontendPath); err != nil {
+		frontendPath = "../frontend/dist"
+	}
+
 	if _, err := os.Stat(frontendPath); err == nil {
 		log.Printf("Serving frontend from: %s", frontendPath)
 		r.Handle("/*", http.FileServer(http.Dir(frontendPath)))
 	} else {
-		log.Printf("Frontend not found at %s - API only mode", frontendPath)
+		log.Printf("Frontend not found - API only mode")
 	}
 
 	// Start server
