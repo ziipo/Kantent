@@ -144,7 +144,7 @@
 							? 'text-blue-600 border-b-2 border-blue-600'
 							: 'text-gray-500 hover:text-gray-700'}"
 					>
-						RSS Feed
+						RSS/Atom
 					</button>
 					<button
 						on:click={() => (activeTab = 'reddit')}
@@ -215,18 +215,21 @@
 						{/if}
 					</div>
 				{:else if activeTab === 'rss'}
-					<form on:submit={handleAddRssFeed} class="flex gap-2">
+					<form on:submit={handleAddRssFeed} class="space-y-3">
 						<input
 							type="url"
-							placeholder="Enter feed URL (e.g., https://example.com/feed.xml)"
+							placeholder="Enter RSS or Atom feed URL (e.g., https://example.com/feed.xml)"
 							bind:value={newFeedUrl}
-							class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
 						/>
+						<p class="text-xs text-gray-500">
+							Supports RSS 1.0/2.0, Atom, and JSON Feed formats
+						</p>
 						<button
 							type="submit"
 							disabled={$isCreatingFeed}
-							class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+							class="w-full px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
 						>
 							{$isCreatingFeed ? 'Adding...' : 'Add Feed'}
 						</button>
@@ -297,19 +300,19 @@
 								class="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
 							>
 								<div
-									class="flex-1 cursor-pointer"
+									class="flex-1 min-w-0 cursor-pointer"
 									on:click={() => handleSelectFeed(feed.id)}
 									on:keypress
 									role="button"
 									tabindex="0"
 								>
-									<h3 class="font-semibold">{feed.title}</h3>
+									<h3 class="font-semibold truncate">{feed.title}</h3>
 									<p class="text-sm text-gray-500 truncate">{feed.url}</p>
 									{#if feed.last_error}
-										<p class="text-xs text-red-500 mt-1">Error: {feed.last_error}</p>
+										<p class="text-xs text-red-500 mt-1 truncate">Error: {feed.last_error}</p>
 									{/if}
 								</div>
-								<div class="flex gap-2 ml-4">
+								<div class="flex gap-2 ml-4 flex-shrink-0">
 									<button
 										on:click={() => handleRefresh(feed.id)}
 										class="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded"
@@ -320,6 +323,7 @@
 									<button
 										on:click={() => handleDelete(feed)}
 										class="px-3 py-1 text-red-600 hover:bg-red-50 rounded"
+										title="Delete feed"
 									>
 										Delete
 									</button>
